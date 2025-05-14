@@ -60,7 +60,7 @@ def create_profile(profile_name, access_key, secret_key):
 
     print(f"Created profile '{profile_name}'")
 
-def get_iam_client(profile_name=None):
+def get_aws_client(profile_name=None):
     # Check if profile provided in arguments 
     if profile_name:
         session = boto3.Session(profile_name=profile_name)
@@ -76,7 +76,9 @@ def get_iam_client(profile_name=None):
             session = boto3.Session(profile_name=profile_name)
         else:
             raise Exception("AWS credentials required. Exiting.")
-    return session.client('iam')
+    return (session.client('iam'), session.client('sts'))
+
+
 
 # Use aws cli to pull in aws roles 
 def list_roles(iam_client):
@@ -177,13 +179,25 @@ def present_results(account_to_roles, known_accounts):
             print(f"- {role}")
         print()
 
+def get_account_info(sts_client):
+    response = sts_client.get_caller_identity()
+    accountId = response["Account"]
+    callerArn = response["Arn"]
+    print("Running as "+ callerArn+" from account "+accountId+"\n------------------")
+    return(accountId)
+
+
+
 def main():
 
 
-    iam_client = get_iam_client(args.profile)
+    iam_client, sts_client = get_aws_client(args.profile)
     roles = list_roles(iam_client)
+    accountId = get_account_info(sts_client)
     account_to_roles = extract_account_ids_from_trust_policies(roles)
     known_accounts = get_known_accounts()
+    known_accounts[accountId] = "Caller AWS Account"
+
     if args.custom_file:
         custom_accounts = load_custom_accounts(args.custom_file)
         # Loops through accounts in custom file 
