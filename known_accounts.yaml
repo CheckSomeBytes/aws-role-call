@@ -1,0 +1,4 @@
+- name: 'Internal Security Account'
+  accounts: ['454464851268']
+- name: 'Internal Dev Account'
+  accounts: ['000111222333', '595280932656']
